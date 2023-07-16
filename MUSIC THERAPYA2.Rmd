@@ -1,6 +1,6 @@
 ---
 title: "MUSIC THERAPY"
-author: "SHUBHRADEEP, ARUNIMA,SRUBA"
+author: "ARUNIMA"
 date: "2023-01-09"
 output:
   html_document: default
