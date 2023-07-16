@@ -1,0 +1,294 @@
+---
+title: "MUSIC THERAPY"
+author: "SHUBHRADEEP, ARUNIMA,SRUBA"
+date: "2023-01-09"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(readr)
+library(visdat)
+library(janitor)
+library(stargazer)
+```
+
+## DATA:
+```{r}
+music=read.csv("C:/Users/hp/Documents/music_newdata.csv")
+View(music)
+```
+
+## DATA OVERVIEW:\
+
+###  Data Description:
+```{r}
+glimpse(music)
+```
+
+### Summary Statistics of Data:
+```{r}
+S<-summary(music)
+as.table(S)
+```
+
+### Looking at age distribution among participants:
+```{r message=FALSE, warning=FALSE}
+ggplot(music,aes(Age))+geom_histogram(col='blue',fill="lightblue")+labs(title = "Age of Participents",x="Age",y="Number of Participants")
+```
+
+### View the different streaming platforms and the count of users
+```{r}
+#Create a dataframe for streaming platform
+
+streaming_platform <- music%>%
+filter(Primary.streaming.service != "") %>%
+group_by(Primary.streaming.service)%>%
+summarize(users = n())%>%
+arrange(desc(users))
+stargazer(streaming_platform,type="text",summary=F)
+
+ggplot ((data = streaming_platform), aes(x = reorder(Primary.streaming.service, -users), y = users,fill=Primary.streaming.service)) + geom_col() +geom_text(aes(label=users))+ labs(title = "Streaming Platforms by Popularity")+ xlab("Streaming Platforms") + theme(axis.text.x= element_text(size =10, angle = 90))
+
+```
+
+### Visualization of Favourite genre of Music:
+```{r}
+
+Fav_genre<-music%>%group_by(Fav.genre)%>%summarise(user=n())%>%arrange(desc(user))
+stargazer(Fav_genre,type="text",summary=F)
+ggplot(data = music) + geom_bar(mapping = aes(x = Fav.genre, fill =Fav.genre), width = 1, 
+          show.legend = FALSE) + coord_polar("x") + 
+  labs(title = "Pie Chart showing Favourite genre", x = NULL, y = NULL)  
+  
+  
+```
+
+## ANALYSIS:
+
+### 1) Let's talk about Anxiety and let's see how music thearpy work for it.
+**Let's calculate correlation between Age and Insomnia.**
+```{r message=FALSE, warning=FALSE}
+Favourite_genre<-music$Fav.genre
+Anxiety<-music$Anxiety
+Age<-music$Age
+V_Age<-var(Age)
+V_Anxiety<-var(Anxiety)
+Covariance<-cov(Age,Anxiety)
+Correlation<-Covariance/(sqrt(V_Age)*sqrt(V_Anxiety))
+A<-data.frame(V_Age,V_Anxiety,Covariance,Correlation)
+stargazer(A,type="text",summary=F,out="summary.txt")
+```
+```{r}
+ggplot(data = music, aes(x = Age, y = Anxiety)) + geom_smooth(colour = "maroon") + labs(title = "Age distribition: Anxiety")
+```
+\
+\
+**Let's see how different genre of music affects Anxiety.**
+```{r}
+An_genre<-data.frame(Favourite_genre,Anxiety)
+ggplot(music,aes(Favourite_genre,Anxiety,color=Anxiety))+
+  geom_point(size=5)+geom_smooth()+scale_color_gradient(low = "blue", high = "red")+
+labs(title="Effect of different genre on Anxiety",x="Favourite Genre",y="Anxiety")+theme(axis.text.x= element_text(size =10,angle = 90))
+```
+```{r}
+An <- subset(music, select = c(Fav.genre, Anxiety, Music.effects))%>%
+filter(Music.effects != "") %>%
+filter(Anxiety > 0)
+ggplot(An, aes(x = Fav.genre, fill = Music.effects)) + geom_bar(col="black",position="dodge") + labs(title = "Music effect on Anxiety") + xlab("Fav Genre") + theme(axis.text.x= element_text(size =10, angle = 90)) + scale_fill_manual(breaks =c("Improve","No effect","Worsen"),values=c("maroon", "coral", "purple"))
+```
+\
+\
+**INSIGHTS:-**\
+As we see from correlation, we got negetive correlation coefficient between Age and Anxiety, so we can say as Age increases Anxiety decreases, this is evident from the graph also. After 20s we see a decline in self reported Anxiety.Now if we talk about Music Therapy, most of people listens to Rock and they have Anxiety around 5 and 7.5. Apart from Rock, Metal and Lo-fi is seen to improve Anxiety a lot.
+\
+\
+
+### 2) Let's talk about Depression and let's see how music thearpy work for it.
+**Let's calculate correlation between Age and Depression.**
+```{r message=FALSE, warning=FALSE}
+Favourite_genre<-music$Fav.genre
+Depression<-music$Depression
+Age<-music$Age
+V_Age<-var(Age)
+V_Depression<-var(Depression)
+Covariance<-cov(Age,Depression)
+Correlation<-Covariance/(sqrt(V_Age)*sqrt(V_Depression))
+A<-data.frame(V_Age,V_Depression,Covariance,Correlation)
+stargazer(A,type="text",summary=F,out="summary.txt")
+```
+```{r}
+ggplot(data = music, aes(x = Age, y = Depression)) + geom_smooth(colour = "darkblue") + labs(title = "Age distribition: Depression")
+```
+\
+\
+**Let's see how different genre of music affects Depression.**
+```{r}
+De_genre<-data.frame(Favourite_genre,Depression)
+ggplot(music,aes(Favourite_genre,Depression,color=Depression))+
+  geom_count(position="nudge")+scale_color_gradient(low = "lightgreen", high ="blue")+
+  labs(title="Effect of different genre on Depression",x="Favourite Genre",y="Depression")+theme(axis.text.x= element_text(size =10, angle = 90))
+```
+```{r}
+De <- subset(music, select = c(Fav.genre, Depression, Music.effects))%>%
+filter(Music.effects != "") %>%
+filter(Depression > 0)
+ggplot(De, aes(x = Fav.genre, fill = Music.effects)) + geom_bar(col="black",position="dodge") + labs(title = "Music effect on Depression") + xlab("Fav Genre") + theme(axis.text.x= element_text(size =10, angle = 90)) + scale_fill_manual(breaks =c("Improve","No effect","Worsen"),values=c("royalblue4", "cyan4", "blue4"))
+```
+\
+\
+**INSIGHTS:-**\
+As we see from correlation, we got negetive correlation coefficient between Age and Depression, so we can say as Age increases Depression decreases, this is evident from the graph also. After 20s we see a decline in self-reported Depression. Now if we talk about Music Therapy, most of people listens to Rock and they have Depression around 5 and 7.5. Apart from Rock, Metal and Pop is seen to improve Depression a lot.
+\
+\
+
+
+### 3) Let's talk about Insomnia and let's see how music thearpy work for it.
+**Let's calculate correlation between Age and Insomnia.**
+```{r message=FALSE, warning=FALSE}
+Favourite_genre<-music$Fav.genre
+Insomnia<-music$Insomnia
+Age<-music$Age
+V_Age<-var(Age)
+V_Insomnia<-var(Insomnia)
+Covariance<-cov(Age,Insomnia)
+Correlation<-Covariance/(sqrt(V_Age)*sqrt(V_Insomnia))
+A<-data.frame(V_Age,V_Insomnia,Covariance,Correlation)
+stargazer(A,type="text",summary=F,out="summary.txt")
+```
+```{r}
+ggplot(data = music, aes(x = Age, y = Insomnia)) + geom_smooth(colour = "darkgreen") + labs(title = "Age distribition: Insomnia")
+```
+\
+\
+**Let's see how different genre of music affects Insomnia.**
+```{r}
+In_genre<-data.frame(Favourite_genre,Insomnia)
+ggplot(music,aes(Favourite_genre,Insomnia,color=Insomnia))+
+  geom_count(position="nudge")+scale_color_gradient(low = "pink", high = "purple")+
+  labs(title="Effect of different genre on Insomnia",x="Favourite Genre",y="Insomnia")+theme(axis.text.x= element_text(size =10, angle = 90))
+```
+```{r}
+De <- subset(music, select = c(Fav.genre, Insomnia, Music.effects))%>%
+filter(Music.effects != "") %>%
+filter(Insomnia > 0)
+ggplot(De, aes(x = Fav.genre, fill = Music.effects)) + geom_bar(col="black",position="dodge") + labs(title = "Music effect on Insomnia") + xlab("Fav Genre") + theme(axis.text.x= element_text(size =10, angle = 90)) + scale_fill_manual(breaks =c("Improve","No effect","Worsen"),values=c("navy", "darkmagenta", "pink4"))
+```
+**INSIGHTS:-**  
+
+
+
+### 4) Let's talk about OCD and let's see how music thearpy work for it.
+**Let's calculate correlation between Age and OCD.**
+```{r message=FALSE, warning=FALSE}
+Favourite_genre<-music$Fav.genre
+OCD<-music$OCD
+Age<-music$Age
+V_Age<-var(Age)
+V_OCD<-var(OCD)
+Covariance<-cov(Age,OCD)
+Correlation<-Covariance/(sqrt(V_Age)*sqrt(V_OCD))
+A<-data.frame(V_Age,V_OCD,Covariance,Correlation)
+stargazer(A,type="text",summary=F,out="summary.txt")
+```
+```{r}
+ggplot(data = music, aes(x = Age, y = OCD)) + geom_smooth(colour = "green") + labs(title = "Age distribition: OCD")
+```
+\
+\
+**Let's see how different genre of music affects OCD.**
+```{r}
+De_genre<-data.frame(Favourite_genre,OCD)
+ggplot(music,aes(Favourite_genre,OCD,color=OCD))+
+  geom_count(position="nudge")+scale_color_gradient(low ="orange", high = "red")+
+  labs(title="Effect of different genre on OCD",x="Favourite Genre",y="OCD")+theme(axis.text.x= element_text(size =10, angle = 90))
+```
+```{r}
+De <- subset(music, select = c(Fav.genre, OCD, Music.effects))%>%
+filter(Music.effects != "") %>%
+filter(OCD > 0)
+ggplot(De, aes(x = Fav.genre, fill = Music.effects)) + geom_bar(col="black",position="dodge") + labs(title = "Music effect on OCD") + xlab("Fav Genre") + theme(axis.text.x= element_text(size =10, angle = 90)) + scale_fill_manual(breaks =c("Improve","No effect","Worsen"),values=c("brown", "springgreen1", "darkolivegreen3"))
+```
+**INSIGHTS:-**
+
+
+
+### 5) Let's find out genre preferences of participants:
+```{r}
+genre=music[12:26]
+## Tallying totals for frequency listened to of each genre
+genre_filtered=genre%>%pivot_longer(cols = everything())%>%count(name, value)%>%
+  pivot_wider(names_from = value, values_from = n, values_fill = 0)
+
+colnames(genre_filtered)[colnames(genre_filtered) %in% c("name")] = c("Music_type")
+colnames(genre_filtered)[colnames(genre_filtered) %in% c("Very frequently")] = c("Very_frequently")
+genre_filtered
+genre_filtered1=pivot_longer(genre_filtered,2:5,names_to="Frequency", values_to="Value")
+
+ggplot(genre_filtered1, aes(x=Music_type, y=Value, fill=Frequency))+
+  geom_bar(aes(color=Music_type),col="black",position='dodge', stat='identity')+
+  theme(text = element_text(size = 13)) +
+  labs(title='Music Genre Breakdown')+
+  ylab('Number of Participants')+
+  xlab('Music Genre')+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+**INSIGHTS:-**\
+The least popluar categories of music among participants were Gospel, Latin, and K-pop.The most popular categories of music among participants were Rock, Pop, and Metal.
+
+
+
+### 6) 
+### a)Is there a relationship between age and how many hours participants listen to music per day.
+```{r}
+Hours_per_day<-music$Hours.per.day
+Avg<-mean(Hours_per_day)
+Avg
+ggplot(data=music, aes(x=Age, y=Hours.per.day))+
+  geom_smooth()+
+  ylab('Hours per day')+
+  labs(title='Age vs. Hours Listening to Music')+
+  scale_y_continuous(breaks=c(0,2,4,6,8,10,12,14,16))+
+  scale_x_continuous(breaks=c(0,10,20,30,40,50,60,70,80))+
+  theme(text = element_text(size = 13))
+C<-summary(lm(Age~Hours.per.day,music))
+stargazer(C)
+```
+\
+\
+**INSIGHTS:-**\
+So we see that average of hours of music listening per day is 3 hours 35 minutes across all age group, and this gradually decreases as age increases.
+\
+\
+### b)Is there a relationship between age and how many Favourite genre.
+```{r}
+A<-cut(music$Age,breaks=5,labels=c("10-20","20-30","30-40","40-50","50-60"))
+SS<-music%>%mutate(A)
+B<-(SS)%>%group_by(A,Fav.genre)%>%summarise(user=n())%>%arrange(A)
+as.data.frame(B)
+ggplot(data=music, aes(Favourite_genre,Age,fill=Favourite_genre))+
+  geom_boxplot(col="black")+
+  ylab('Age')+
+  labs(title='Age vs Favourite genre ')+ 
+  theme(axis.text.x= element_text(size =10, angle = 90))
+   
+```
+\
+\
+**INSIGHTS:-**
+For people between age 40 and 60, Gospel is more popular than any other genre, and for people between 20 and 30 Rock, Metal is more popular, for teenagers K-pop is  more popular  among them.
+
+
+
+
+
+
+
+

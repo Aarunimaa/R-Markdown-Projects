@@ -1,0 +1,351 @@
+---
+title: "Penguins Analysis"
+author: "AP SC SS"
+date: '2023-01-12'
+output: word_document
+---
+
+```{r,warning=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(pastecs)
+library(stargazer)
+library(ggpubr)
+```
+### THE DATA AND A PORTION OF IT:
+```{r,warning=FALSE}
+penguin=read.csv("C:/Users/DELL/Downloads/Penguins.csv")
+head(penguin,10)
+```
+### DESCRIPTION AND BASIC SUMMARY OF THE DATA:
+```{r,warning=FALSE}
+glimpse(penguin)
+summary(penguin)
+```
+### DATA CLEANING:
+```{r,warning=FALSE}
+na_count=sapply(penguin, function(y) sum(length(which(is.na(y)))))%>%data.frame()
+na_count
+```
+We can see that there are 2 missing values in body mass and 10 missing values in sex columns. There is also a '.' in the sex column which should be omitted.
+```{r}
+subset(penguin, !complete.cases(penguin))
+```
+Since these 10 tuples do not contain full information on all the attributes, we will eliminate them.
+```{r}
+penguin=penguin%>%na.omit()%>%filter(sex!=".")
+```
+
+Thus we  have our cleansed dataset ready for analysis.
+
+
+### INITIAL DATA VISUALIZATION:
+```{r,warning=FALSE}
+p1=penguin%>%count(species)%>%
+  ggplot()+geom_col(aes(species,n,fill=species),alpha=0.7,color="black")+
+  geom_label(aes(species,n,label = n)) +
+  theme_minimal() +
+  labs(title = 'Penguins Species',x="Species",y="Count",fill="Species") +
+  theme(title=element_text(size=10),
+        plot.title = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10),
+        axis.text.x = element_text(size=10,angle=90))
+
+p2=penguin%>%count(island)%>%
+  ggplot()+geom_col(aes(island,n,fill=island),alpha=0.7,color="black")+
+  geom_label(aes(island,n,label = n)) +
+  theme_minimal() +
+  labs(title = 'Penguins Islands',x="Islands",y="Count",fill="Islands") +
+  theme(title=element_text(size=10),
+        plot.title = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10),
+        axis.text.x = element_text(size=10,angle=90))
+
+p3=penguin%>%count(sex)%>%
+  ggplot()+geom_col(aes(sex,n,fill=sex),alpha=0.7,color="black")+
+  geom_label(aes(sex,n,label = n)) +
+  theme_minimal() +
+  labs(title = 'Penguins Sex',x="Sex",y="Count",fill="Penguin Sex") +
+  theme(title=element_text(size=10),
+        plot.title = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10),
+        axis.text.x = element_text(size=10,angle=90))
+
+ggarrange(p1,p2,p3,nrow=2,ncol=2)%>%
+  annotate_figure(top=text_grob("Quick Visualization of the Categorical Variables",size=15))
+
+```
+
+The above diagrams give us a quick visualization of all the categorical variables present in the dataset.
+
+Then we have the numerical variables:
+```{r,warning=FALSE}
+n=1:333
+p1=penguin%>%
+  ggplot(aes(n,body_mass_g))+
+  geom_point(color="orchid4",alpha=0.7,size=2)+
+  labs(title="Body Mass (g)",
+       x="Index",
+       y="Body Mass")+
+  theme_minimal()+
+  theme(title=element_text(size=10),
+        plot.title = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10))
+
+p2=penguin%>%
+  ggplot(aes(n,flipper_length_mm))+
+  geom_point(color="darkgoldenrod2",alpha=0.7,size=2)+
+  labs(title="Flipper Length (mm)",
+       x="Index",
+       y="Flipper Length")+
+  theme_minimal()+
+  theme(title=element_text(size=10),
+        plot.title = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10))
+
+p3=penguin%>%
+  ggplot(aes(n,culmen_length_mm))+
+  geom_point(color="mediumpurple3",alpha=0.7,size=2)+
+  labs(title="Culmen Length (mm)",
+       x="Index",
+       y="Culmen Length")+
+  theme_minimal()+
+  theme(title=element_text(size=10),
+        plot.title = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10))
+
+p4=penguin%>%
+  ggplot(aes(n,culmen_depth_mm))+
+  geom_point(color="firebrick2",alpha=0.7,size=2)+
+  labs(title="Culmen Depth (mm)",
+       x="Index",
+       y="Culmen Depth")+
+  theme_minimal()+
+  theme(title=element_text(size=10),
+        plot.title = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10))
+
+ggarrange(p1,p2,p3,p4,nrow=2,ncol=2)%>%
+  annotate_figure(top=text_grob("Quick Visualization of the Numerical Variables",size=15))
+
+```
+The above graphs show us the scatter plots of the four numerical variables in the dataset.
+
+## TO STUDY IF THERE IS DOMINANCE OF SEX OF THE PENGUINS ACROSS DIFFERENT SPECIES.
+
+```{r,warning=FALSE}
+table(penguin$sex)
+```
+
+The above table shows that the data in hand has an even distribution of the penguins across the two sexes, with only 3 males more than the females.
+```{r}
+penguin %>%
+  count(sex, species) %>%
+  ggplot() + geom_col(aes(sex,n,fill=species),alpha=0.7,color="black") + geom_label(aes(sex,n,label = n)) +
+  scale_fill_manual(values = c("maroon", "coral", "purple")) +
+  facet_wrap(~species) +
+  theme_minimal() +
+  labs(title = 'Penguins Species vs  their Gender',x="Species",y="Count",fill="Species") +
+  theme(title=element_text(size=15),
+        plot.title = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10),
+        axis.text.x = element_text(size=10,angle=90))
+
+```
+
+The above diagram shows that the Adelie and the Chinstrap penguins have equal distribution of penguins between the teo sexes. The Gentoo penguins have 3 more males. Thus it is evident that there is no dominance of any sex across different species.
+
+
+## A DETAILED STUDY OF THE BODY MASS OF THE PENGUINS.
+
+```{r,warning=FALSE}
+penguin%>%ggplot(aes(body_mass_g))+
+  geom_histogram(fill="yellow3",color="deepskyblue4",alpha=0.7)+
+  labs(title="Histogram of Body Mass of penguins",
+       x="Body Mass",
+       y="Frequency")+
+  theme_minimal()+
+  theme(title=element_text(size=15),
+        plot.title = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10))
+```
+
+The above histogram shows the frequency of the body mass with a median at 4050. The distribution is positively skewed, meaning most penguins tend to have a lesser body mass than the average body mass of all the penguins combined.
+
+
+```{r,warning=FALSE}
+summary(penguin$body_mass_g)
+stargazer(stat.desc(penguin$body_mass_g),type="text",
+          title="Table showing the various summary statistics of Body Mass of the Penguins",
+          notes=c("The probability of the C.I. is 0.95",
+                 "SE.mean: standard error of mean",
+                 "CI.mean: confidence interval of mean",
+                 "coef.var: coefficient of variation"))
+```
+
+The above table summarises the various summary statistics of body mass of the penguins.
+
+
+```{r,warning=FALSE}
+p1=penguin%>%ggplot(aes(island,body_mass_g,fill=island))+geom_boxplot(aes(fill=island))+
+  stat_summary(fun = "mean", geom = "point", shape = 8,size = 2, 
+               color = "ghostwhite")+
+  labs(subtitle="Variation across Islands",
+       x="Islands",
+       y="Body Mass",
+       fill="Islands")+
+  scale_fill_manual(values=c("peachpuff2","steelblue4","chartreuse2"))+
+  theme_minimal()+
+  theme(plot.subtitle = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10))
+
+
+p2=penguin%>%ggplot(aes(species,body_mass_g))+geom_boxplot(aes(fill=species))+
+  stat_summary(fun = "mean", geom = "point", shape = 8,size = 2, 
+               color = "white")+
+  labs(subtitle="Variation across Species",
+       x="Species",
+       y="Body Mass",
+       fill="Species")+
+  scale_fill_manual(values=c("magenta2","lightgreen","darkorange3"))+
+  theme_minimal()+
+  theme(plot.subtitle = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10))
+
+
+p3=penguin%>%ggplot(aes(sex,body_mass_g))+geom_boxplot(aes(fill=sex))+
+  stat_summary(fun = "mean", geom = "point", shape = 8,size = 2, 
+               color = "white")+
+  labs(subtitle="Variation across Penguin Sex",
+       x="Sexes",
+       y="Body Mass",
+       fill="Penguin Sex")+
+  scale_fill_manual(values=c("gold2","mediumblue"))+
+  theme_minimal()+
+  theme(plot.subtitle = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10))
+
+ggarrange(p1,p2,p3,nrow=2,ncol=2)%>%
+  annotate_figure(top=text_grob("Boxplots showing the variation of Body Mass",size=15))
+
+
+```
+
+The above boxplots show the variation of body mass of the penguins across islands, species and sexes respectively. From the first plot, it is evident that the penguins living in the Biscoe island have a significantly higher body mass than those living in the Dream and Torgersen islands. From the second plot, it is clear that the Gentoo species are significantly heavier than the other two species. Finally we can see that the male penguins have a slightly higher body mass than the females.
+
+### NOW WE CAN FOCUS ON THE BIVARIATE ANALYSIS OF THE NUMERICAL VARIABLES IN THE GIVEN DATASET. TO PROCEED WITH THE ABOVE-MENTIONED, WE FIRST FIND OUT THE CORRELATION AMONG EACH OF THE VARIABLES.
+```{r,warning=FALSE}
+penguin%>%select(culmen_length_mm,culmen_depth_mm,
+                 flipper_length_mm,body_mass_g)%>%cor%>%
+  stargazer(type="text",summary=NULL,
+            title = "Table showing the correlation among the numerical variables of the given data")
+
+```
+Since there is a high correlation between the body mass and the flipper length, we will analyse how they are related across the species and islands. The flipper length and the culmen length have a moderate correlation as well. So we will study these two variables also.
+
+## A DETAILED STUDY ON THE RELATIONSHIP BETWEEN BODY MASS AND FLIPPER LENGTH OF THE PENGUINS.
+
+#### ACROSS SPECIES:
+```{r,warning=FALSE}
+
+penguin%>%ggplot(aes(body_mass_g, flipper_length_mm))+
+  geom_point(aes(color=species,shape=sex),size=2.5,alpha=0.8)+
+  geom_smooth(color="darkorchid1",alpha=0.5)+
+  facet_grid(~species)+
+  scale_color_manual(values=c("cyan4", "brown4", "midnightblue"))+
+  labs(title="Body Mass vs Flipper length of the Penguins",
+       subtitle = "Species Variation",
+       x = "Body Mass (g)",
+       y = "Flipper length (mm)",
+       color = "Penguin Species",
+       shape = "Penguin Sex") +
+  theme_minimal()+
+  theme(title=element_text(size=12),
+        plot.title = element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10))
+```
+
+#### ACROSS ISLANDS:
+```{r,warning=FALSE}
+penguin%>%ggplot(aes(body_mass_g, flipper_length_mm))+
+  geom_point(aes(color=island,shape=sex),size=2.5,alpha=0.8)+
+  geom_smooth(color="darkorchid1",alpha=0.5)+
+  facet_grid(~island)+
+  scale_color_manual(values=c("red2","blue2","orange3"))+
+  labs(title="Body Mass vs Flipper length of the Penguins",
+       subtitle = "Islands Variation",
+       x = "Body Mass (g)",
+       y = "Flipper length (mm)",
+       color = "Islands",
+       shape = "Penguin Sex") +
+  theme_minimal()+
+  theme(title=element_text(size=12),
+        plot.title = element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10))
+
+```
+Hence, we can see that there is high correlation between body mass and flipper length of the penguins.
+
+## A DETAILED STUDY ON THE RELATIONSHIP BETWEEN CULMEN LENGTH AND FLIPPER LENGTH OF THE PENGUINS.
+
+#### ACROSS SPECIES:
+```{r,warning=FALSE}
+penguin%>%ggplot(aes(culmen_length_mm, flipper_length_mm))+
+  geom_point(aes(color=species,shape=sex),size=2.5,alpha=0.8)+
+  geom_smooth(color="darkolivegreen3",alpha=0.5)+
+  facet_grid(~species)+
+  scale_color_manual(values=c("brown", "springgreen2", "navy"))+
+  labs(title="Culmen Length vs Flipper Length of the Penguins",
+       subtitle = "Species Variation",
+       x = "Culmen Length (mm)",
+       y = "Flipper Length (mm)",
+       color = "Penguin Species",
+       shape = "Penguin Sex") +
+  theme_minimal()+
+  theme(title=element_text(size=12),
+        plot.title = element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10))
+
+```
+
+#### ACROSS ISLANDS:
+```{r,warning=FALSE}
+penguin%>%ggplot(aes(culmen_length_mm, flipper_length_mm))+
+  geom_point(aes(color=island,shape=sex),size=2.5,alpha=0.8)+
+  geom_smooth(color="darkolivegreen3",alpha=0.5)+
+  facet_grid(~island)+
+  scale_color_manual(values=c("maroon","deepskyblue4","indianred1"))+
+  labs(title="Culmen Length vs Flipper Length of the Penguins",
+    subtitle = "Islands Variation",
+       x = "Culmen Length (mm)",
+       y = "Flipper Length (mm)",
+       color = "Islands",
+       shape = "Penguin Sex") +
+  theme_minimal()+
+  theme(title=element_text(size=12),
+        plot.title = element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5),
+        axis.title.x = element_text(size=10),
+        axis.title.y = element_text(size=10))
+
+```
+Hence, we can see that there is high correlation between culmen length and flipper length of the penguins.
+
